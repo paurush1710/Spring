@@ -1,0 +1,101 @@
+Key Explanations >>>
+
+@Component
+Marks the class as a bean so that Spring can detect and create it during component scanning.
+
+@Autowired
+Automatically injects the required dependency — here, a Processor implementation.
+
+@Primary
+When multiple beans implement the same interface, Spring needs to know which one to prefer.
+
+@Primary on Snapdragon tells Spring: “Inject this one unless told otherwise.”
+
+@ComponentScan
+Tells Spring which package to search for components (@Component, @Service, @Repository, etc.).
+
+ApplicationContext
+Loads the Spring container. When it’s created, Spring scans the package, finds all beans, and injects dependencies automatically.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+package com.telusko.SpringApp;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.*;
+import org.springframework.stereotype.Component;
+
+// --- INTERFACE ---
+public interface Processor {
+    void process();
+}
+
+// --- IMPLEMENTATIONS ---
+@Component
+@Primary // Marks Snapdragon as the default Processor bean
+class Snapdragon implements Processor {
+    @Override
+    public void process() {
+        System.out.println("Best processor");
+    }
+}
+
+@Component
+class Mediatek implements Processor {
+    @Override
+    public void process() {
+        System.out.println("2nd best processor");
+    }
+}
+
+// --- SAMSUNG CLASS ---
+@Component
+class Samsung {
+
+    // Field Injection using @Autowired
+    @Autowired
+    Processor processor;
+
+    public void start() {
+        System.out.println("Mobile started");
+        processor.process(); // calls whichever bean is injected
+    }
+}
+
+// --- CONFIGURATION CLASS ---
+@Configuration
+@ComponentScan(basePackages = {"com.telusko.SpringApp"})
+class AppConfig { }
+
+// --- MAIN CLASS ---
+public class MainApp {
+    public static void main(String[] args) {
+        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        Samsung s = context.getBean(Samsung.class);
+        s.start();
+    }
+}
+
+Instead of AppConfig.class we can also pass xml file, if configuration is picked up from xml file (beans created in config file,)
+Beans can be created from xml file, the no component annotation is required
+Beans can also be created in AppConfig.class, then no component annotation is required
+@ComponentScan is for finding out the beans, it is done by either AppConfig class if bean not explictly mentioned in the class and classes have @Component on it
+or done by xml config class if no beans are created in it and the classes have @Component on it
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Output
+Mobile started
+Best processor
+
+
+If you remove @Primary from Snapdragon, Spring will throw an error:
+NoUniqueBeanDefinitionException: expected single matching bean but found 2: snapdragon, mediatek
+
+
+You could then fix it by using:
+@Autowired
+@Qualifier("mediatek")
+Processor processor;
+
+
