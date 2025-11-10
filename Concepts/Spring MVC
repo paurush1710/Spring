@@ -1,0 +1,176 @@
+Dispatcher Servlet Flow:
+
+Browser (GET /home)
+        ↓
+Tomcat (Servlet container)
+        ↓
+DispatcherServlet (Front Controller)
+        ↓
+HandlerMapping → Finds Controller
+        ↓
+HandlerAdapter → Calls Controller
+        ↓
+Controller executes (adds model, returns "home")
+        ↑
+Back to DispatcherServlet
+        ↓
+ViewResolver → /WEB-INF/views/home.jsp
+        ↓
+DispatcherServlet forwards to JSP
+        ↓
+JSP renders HTML
+        ↓
+Response → Browser
+
+Step	Who					        What Happens
+1	    Browser				      Sends request
+2	    Tomcat				      Forwards to DispatcherServlet
+3	    DispatcherServlet	  Main entry point, orchestrates the whole flow
+4	    HandlerMapping		  Finds correct Controller
+5	    HandlerAdapter		  Invokes Controller method
+6	    Controller			    Runs logic, returns view name
+7	    DispatcherServlet	  Gets back model + view name
+8	    ViewResolver		    Maps view name → actual JSP
+9	    JSP					        Renders HTML
+10	  DispatcherServlet	  Sends final response
+11	  Browser				      Displays result
+
+Spring MVC Full Request–Response Lifecycle
+
+🧭 Step 1 — Browser Sends a Request
+
+User opens:
+
+http://localhost:8080/SpringMVCApp/home
+
+
+This is an HTTP GET request.
+
+🧩 Step 2 — Tomcat receives the request
+
+Tomcat looks in web.xml and says:
+
+“This URL pattern / is handled by the servlet named app → DispatcherServlet.”
+
+So it forwards the request to Spring’s DispatcherServlet.service() method.
+
+⚙️ Step 3 — DispatcherServlet Takes Control
+
+This is where the Spring MVC magic begins.
+
+Internally, DispatcherServlet calls:
+
+doDispatch(request, response)
+
+Inside this method, the real flow starts.
+
+Step-by-Step Inside DispatcherServlet
+
+Let’s open it up.
+
+🧩 Step 4 — HandlerMapping
+
+DispatcherServlet asks all HandlerMapping beans:
+
+“Which controller should handle /home?”
+
+HandlerMapping looks at all @RequestMapping annotations in your controllers.
+
+It finds:
+
+@RequestMapping("/home")
+public String home(Model model)
+
+
+and says:
+
+“HomeController’s home() method should handle this request.”
+
+✅ A HandlerExecutionChain (controller + interceptors) is returned.
+
+🧩 Step 5 — HandlerAdapter
+
+DispatcherServlet now needs to execute that method.
+But controllers can be of different types (annotation-based, simple, etc.),
+so it uses a HandlerAdapter that knows how to call it.
+
+It finds an adapter that supports @RequestMapping methods and calls:
+
+handlerAdapter.handle(request, response, handler);
+
+🧩 Step 6 — Controller Execution
+
+Now your controller method runs:
+
+@Controller
+public class HomeController {
+
+    @RequestMapping("/home")
+    public String home(Model model) {
+        model.addAttribute("name", "Paurush");
+        return "home";   // logical view name
+    }
+}
+
+
+✅ It adds data to the Model.
+✅ Returns logical view name = "home".
+
+🧩 Step 7 — Back to DispatcherServlet
+
+After the controller returns, control goes back to the DispatcherServlet.
+
+DispatcherServlet now has:
+
+The Model (data like “name: Paurush”)
+
+The View name ("home")
+
+So yes ✅ the flow comes back to the DispatcherServlet at this point.
+
+🧩 Step 8 — ViewResolver
+
+DispatcherServlet now asks the ViewResolver:
+
+“Please convert logical view name home into a real view file.”
+
+ViewResolver does this:
+
+prefix + viewName + suffix
+= /WEB-INF/views/ + home + .jsp
+= /WEB-INF/views/home.jsp
+
+
+It returns a View object.
+
+🧩 Step 9 — DispatcherServlet renders the View
+
+Now DispatcherServlet calls:
+
+view.render(model, request, response);
+
+
+That means:
+
+It sets model attributes in the request
+
+Forwards the request to the JSP
+
+🧩 Step 10 — JSP executes and produces HTML
+
+home.jsp uses ${name} to display the value:
+
+<h1>Welcome, ${name}!</h1>
+
+
+The JSP is processed by the JSP engine → converted into HTML.
+
+🧩 Step 11 — Response travels back
+
+The generated HTML response goes:
+
+JSP → DispatcherServlet → Tomcat → Browser
+
+
+✅ DispatcherServlet sends the final response object back through the servlet container.
+✅ The browser renders it as a web page.
