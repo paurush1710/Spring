@@ -1,0 +1,127 @@
+If you just want a basic web app, the only dependency you strictly need is:
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+Includes:
+Spring MVC (spring-web, spring-webmvc)
+Embedded Tomcat server (default)
+Jackson JSON library for REST APIs
+-----------------------------------------------------------------------------------------------------------------------------------------------
+spring-web vs spring-webmvc
+
+Module	Description
+spring-web	    Provides core web functionality (REST, HTTP, Client, Multipart support, etc.)
+spring-webmvc	  Full MVC framework (DispatcherServlet, Controllers, ViewResolvers, HandlerMapping, etc.)
+
+What spring-web provides >
+Basic web-related classes:
+RestTemplate / WebClient for REST calls
+HttpServletRequest / HttpServletResponse integration
+Exception handling for HTTP
+Supports REST APIs even without MVC features.
+
+What spring-webmvc provides >
+The full MVC stack:
+DispatcherServlet → central front controller
+Controller annotations → @Controller, @RestController
+HandlerMapping → map requests to controllers
+ViewResolver → resolve views (Thymeleaf, JSP)
+Interceptors, Formatters, Validators
+Essentially, it gives you the Model-View-Controller pipeline for handling HTTP requests.
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+Taking Request/ Giving Response >>>
+
+Suppose we are calling a page -> localhost:8080/home
+Request will home to the controller class as we are using @RequestMapping("home")
+and the method return String -> "home.jsp"
+
+@Controller
+public class HomeController{
+
+    public String home()
+    {
+        sout("Hi");
+        return "home.jsp";
+    }
+
+}
+
+SpringBoot has auto configuration and scans the project constantly and knows that all the pages should be under
+main > webapp (unless we are explictly changing the path of pages, we can mention in that case)
+
+Still it won't return the page, for that we need a dependency -> tomcat jasper.
+Now Spring boot knows how to convert jsp into servlet
+
+You expect visiting http://localhost:8080/home to render home.jsp.
+Pages are under src/main/webapp (default for JSP).
+Spring Boot auto-configuration scans controllers, knows to use JSPs.
+But it doesn’t work by default unless you add Tomcat Jasper dependency.
+Why Spring Boot doesn’t render JSPs by default>
+
+  Spring Boot uses an embedded Tomcat server.
+  Embedded Tomcat does not include JSP compiler (Jasper) by default.
+  JSPs are compiled into servlets at runtime by Jasper.
+  Without Jasper:
+  Tomcat cannot convert JSP into servlet
+  You get an error like:
+  HTTP Status 500 – Internal Server Error
+  JSP file could not be compiled
+
+Browser
+   |
+   v
+HTTP Request /home
+   |
+   v
+DispatcherServlet (Spring MVC)
+   |
+   v
+HomeController.home()  --> prints "Controller method called!"
+   |
+   v
+Return "home" (logical view)
+   |
+   v
+ViewResolver --> /WEB-INF/views/home.jsp
+   |
+   v
+Tomcat Jasper compiles JSP -> Servlet
+   |
+   v
+Servlet executed -> HTML generated
+   |
+   v
+Response sent to Browser
+
+Servlet Container >
+A servlet container (like Tomcat, Jetty, or Undertow) is a part of a web server that:
+Receives HTTP requests.
+Manages servlets (Java classes that implement HttpServlet).
+Handles the lifecycle of servlets (init, service, destroy).
+Sends HTTP responses back to the client (browser).
+Key point: The container only knows how to run servlets, not raw JSP files.
+
+JSP is Not Directly Executable
+A JSP file looks like HTML with embedded Java code:
+<h1>Welcome, <%= userName %>!</h1>
+
+The servlet container cannot execute this directly because it’s not a Java class.
+This is where Tomcat Jasper (JSP engine) comes in:
+Converts JSP → Java servlet class
+Compiles servlet → .class file
+Servlet is loaded and executed by the servlet container
+
+Servlet executed by container -> HTML generated
+        |
+        v
+HTTP Response sent back to browser
+
+JSP → Servlet conversion is required because containers only execute servlets.
+Jasper does this compilation.
+Once compiled, the servlet is executed like any other Java class, generating HTML dynamically.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
