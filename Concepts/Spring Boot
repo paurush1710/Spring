@@ -1,3 +1,9 @@
+Topics>
+Singleton Bean
+Scope -> Prototype
+Autowired concepts
+Qualifier with Example
+
 Singleton Bean --------------------------------------------------------------------------------------------------------------------------
 
 @SpringBootApplication  // Marks this as the main Spring Boot application
