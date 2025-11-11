@@ -1,0 +1,252 @@
+Singleton Bean --------------------------------------------------------------------------------------------------------------------------
+
+@SpringBootApplication  // Marks this as the main Spring Boot application
+public class DemoApplication {
+
+    public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(DemoApplication.class, args);  // Starts the Spring Boot app
+
+        // Get a bean from context
+        Alien a = context.getBean(Alien.class);
+        a.show();
+    }
+}
+
+@Component  // Marks this as a Spring-managed bean
+public class Alien {
+
+    // No-args constructor
+    public Alien() {
+        System.out.println("Alien object created!");
+    }
+
+    // Method to print a message
+    public void show() {
+        System.out.println("Hello from the Alien class!");
+    }
+}
+
+Whenever application starts this will be printed-> Alien object created!
+Steps>
+Spring Boot starts and executes:
+SpringApplication.run(DemoApplication.class, args);
+
+Because Alien is annotated with @Component, Spring’s component scanning detects it.
+Spring creates an instance of Alien when the application context is initialized.
+
+During instantiation, the no-args constructor is called:
+public Alien() {
+    System.out.println("Alien object created!");
+}
+
+That’s why we see in the console:
+Alien object created!
+
+even if you never manually call new Alien().
+and even if we comment out -> Alien a = context.getBean(Alien.class);
+
+Now if we do
+
+        Alien a = context.getBean(Alien.class);
+        a.show();
+
+        Alien a2 = context.getBean(Alien.class);
+        a2.show();
+
+then also Alien object created! is printed once, at the initialization time
+
+In Spring, a bean annotated with @Component is, by default, a singleton. This means:
+Only one instance of the bean is created per Spring ApplicationContext.
+The instance is created when the context is initialized.
+Any calls to context.getBean(Alien.class) return the same instance.
+
+Scope -> Prototype -------------------------------------------------------------------------------------------------------
+
+@Component
+@Scope(value = "prototype")
+public class Alien {
+    ...
+}
+
+Now even on container startup, object wont be created, will only be created when we explictly ask it from the context.
+public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(DemoApplication.class, args);  // Starts the Spring Boot app
+    }
+
+2 will be created in this case >
+
+public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(DemoApplication.class, args);  // Starts the Spring Boot app
+
+        // Get a bean from context
+        Alien a = context.getBean(Alien.class);
+        a.show();
+
+        Alien a = context.getBean(Alien.class);
+        a.show();
+    }
+
+Autowired concepts ---------------------------------------------------------------------------------------------------------
+
+@Component
+class Laptop {
+    public Laptop() {
+        System.out.println("Laptop created!");
+    }
+
+    public void compiling(String msg) {
+        System.out.println("Laptop compiling: " + msg);
+    }
+}
+
+@Component
+class Alien {
+    @Autowired
+    private Laptop laptop;
+
+    public Alien() {
+        System.out.println("Alien created!");
+    }
+
+    public void show() {
+        System.out.println("Alien show called");
+        laptop.compiling("some message");
+    }
+}
+
+
+1. What happens when Spring Boot starts
+Spring starts component scanning. It finds Alien and Laptop.
+Creating beans happens on-demand based on dependencies:
+Alien depends on Laptop via @Autowired.
+So before creating Alien, Spring checks if Laptop exists.
+If not, Spring creates Laptop first → prints "Laptop created!".
+
+Then Spring creates Alien → prints "Alien created!".
+No methods are called yet, so show() is not executed automatically.
+
+2. When you manually call alien.show()
+
+Alien a = context.getBean(Alien.class);
+a.show();
+
+show() prints: "Alien show called"
+
+Then it calls laptop.compiling("some message") → prints: "Laptop compiling: some message"
+
+3. Final Order of Console Output
+During startup (bean creation):
+Laptop created!
+Alien created!
+
+When show() is called:
+Alien show called
+Laptop compiling: some message
+
+Total sequence:
+
+Laptop created!       <-- constructor of Laptop
+Alien created!        <-- constructor of Alien
+Alien show called     <-- show() called manually
+Laptop compiling: some message  <-- method call from show()
+
+Key Points >
+Dependency beans are created first.
+Constructor runs once per singleton bean.
+Method calls (show()) only run when you explicitly call them.
+Spring resolves dependencies before creating the bean.
+
+Qualifier with Example -------------------------------------------------------------------------------------------------------------------------------
+@Autowired  -> Searches by type
+@Qualifier  -> Searches by name
+
+@Component("lap1")   // default name - laptop, can change it this way
+class Laptop {
+    public Laptop() { System.out.println("Laptop lap1 created!"); }
+    public void compiling(String msg) { System.out.println("Laptop lap1 compiling: " + msg); }
+}
+
+@Component
+class Alien {
+    @Autowired          
+    @Qualifier("lap1")  // specify which Laptop bean to inject
+    private Laptop laptop;
+
+    public Alien() { System.out.println("Alien created!"); }
+
+    public void show() {
+        System.out.println("Alien show called");
+        laptop.compiling("some message");
+    }
+}
+
+@Qualifier is not needed if there’s only one bean of that type.
+
+@Qualifier is only required if you have multiple beans of the same type.
+
+The bean name "lap1" is optional in this case; Spring resolves by type.
+
+Example 2 with Interface >>>>>>
+
+@Component("lap1")  // Bean name
+public class LenovoLaptop implements Laptop {
+
+    public LenovoLaptop() {
+        System.out.println("LenovoLaptop created!");
+    }
+
+    @Override
+    public void compiling(String msg) {
+        System.out.println("LenovoLaptop compiling: " + msg);
+    }
+}
+
+@Component("lap2")
+public class DellLaptop implements Laptop {
+
+    public DellLaptop() {
+        System.out.println("DellLaptop created!");
+    }
+
+    @Override
+    public void compiling(String msg) {
+        System.out.println("DellLaptop compiling: " + msg);
+    }
+}
+
+@Component
+public class Alien {
+
+    @Autowired
+    @Qualifier("lap1")  // Specify which implementation to inject
+    private Laptop laptop;
+
+    public Alien() {
+        System.out.println("Alien created!");
+    }
+
+    public void show() {
+        System.out.println("Alien show called");
+        laptop.compiling("running program...");
+    }
+}
+
+@SpringBootApplication
+public class DemoApplication {
+    public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(DemoApplication.class, args);
+
+        Alien alien = context.getBean(Alien.class);
+        alien.show();
+    }
+}
+
+Console Output >
+LenovoLaptop created!
+DellLaptop created!
+Alien created!
+Alien show called
+LenovoLaptop compiling: running program...
+-------------------------------------------------------------------------------------------------------------------------------
+
+
