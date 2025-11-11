@@ -32,8 +32,8 @@ ViewResolver → resolve views (Thymeleaf, JSP)
 Interceptors, Formatters, Validators
 Essentially, it gives you the Model-View-Controller pipeline for handling HTTP requests.
 -----------------------------------------------------------------------------------------------------------------------------------------------
-
-Taking Request/ Giving Response >>>
+Simple Web Application
+Accepting Request/ Giving Response >>>
 
 Suppose we are calling a page -> localhost:8080/home
 Request will home to the controller class as we are using @RequestMapping("home")
