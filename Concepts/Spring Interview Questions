@@ -1,0 +1,5 @@
+All annotations
+	Working example - all get, put, delete
+	Repository
+	Repository method, default and custom
+	@Transactional
